@@ -1,0 +1,94 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Infrastructure for Raspberry Pi to stream video to Kinesis Video Streams using AWS IoT.
+
+Parameters:
+  StreamName:
+    Type: String
+    Default: RaspberryPiStream
+    Description: Name of the Kinesis Video Stream.
+
+  IoTRoleAlias:
+    Type: String
+    Default: RaspberryPiRoleAlias
+    Description: Alias for the IAM role assumed by AWS IoT.
+
+  RaspberryPiCertificateArn:
+    Type: String
+    Default: arn:aws:iot:eu-west-1:841162692423:cert/19d92835a2365310aaab2660e9237757f4eed7b355ed956bb00c17168d79a8ef
+    Description: ARN of the existing IoT certificate created for the Raspberry Pi
+  IoTEndpoint:
+    Type: String
+    Default: c2hvqkfjjgz92x.credentials.iot.eu-west-1.amazonaws.com
+    Description: The endpoint of the AWS IoT service. This is used to connect the Raspberry Pi to AWS IoT.
+
+Resources:
+  KinesisVideoStream:
+    Type: AWS::KinesisVideo::Stream
+    Properties:
+      DataRetentionInHours: 24
+      StreamName: !Ref StreamName
+
+  RaspberryPiThingType:
+    Type: AWS::IoT::ThingType
+    Properties:
+      ThingTypeName: RaspberryPiType
+      ThingTypeProperties:
+        ThingTypeDescription: Raspberry Pi video streaming device
+  RaspberryPiThing:
+    Type: AWS::IoT::Thing
+    Properties:
+      ThingName: RaspberryPiThing
+      ThingTypeName: RaspberryPiType
+  RaspberryPiThingPrincipalAttachment:
+    Type: AWS::IoT::ThingPrincipalAttachment
+    Properties:
+      ThingName: !Ref RaspberryPiThing
+      Principal: !Ref RaspberryPiCertificateArn
+  IoTRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: RaspberryPiKVSRole
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: credentials.iot.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: RaspberryPiKVSPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - kinesisvideo:PutMedia
+                  - kinesisvideo:DescribeStream
+                  - kinesisvideo:GetDataEndpoint
+                Resource: !Sub arn:aws:kinesisvideo:${AWS::Region}:${AWS::AccountId}:stream/${StreamName}/*
+
+  IoTRoleAlias:
+    Type: AWS::IoT::RoleAlias
+    Properties:
+      Alias: !Ref IoTRoleAlias
+      RoleArn: !GetAtt IoTRole.Arn
+      CredentialDurationSeconds: 3600
+
+  RaspberryPiPolicy:
+    Type: AWS::IoT::Policy
+    Properties:
+      PolicyName: RaspberryPiPolicy
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - iot:AssumeRoleWithCertificate
+            Resource: !Ref IoTRoleAlias
+  RaspberryPiPolicyPrincipalAttachment:
+    Type: AWS::IoT::PolicyPrincipalAttachment
+    Properties:
+      PolicyName: !Ref RaspberryPiPolicy
+      Principal: !Ref RaspberryPiCertificateArn
