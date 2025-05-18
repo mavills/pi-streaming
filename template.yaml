@@ -9,11 +9,6 @@ Parameters:
     Default: RaspberryPiStream
     Description: Name of the Kinesis Video Stream.
 
-  IoTRoleAlias:
-    Type: String
-    Default: RaspberryPiRoleAlias
-    Description: Alias for the IAM role assumed by AWS IoT.
-
   RaspberryPiCertificateArn:
     Type: String
     Default: arn:aws:iot:eu-west-1:841162692423:cert/19d92835a2365310aaab2660e9237757f4eed7b355ed956bb00c17168d79a8ef
@@ -27,8 +22,8 @@ Resources:
   KinesisVideoStream:
     Type: AWS::KinesisVideo::Stream
     Properties:
-      DataRetentionInHours: 24
-      StreamName: !Ref StreamName
+      DataRetentionInHours: 1
+      Name: !Ref StreamName
 
   RaspberryPiThingType:
     Type: AWS::IoT::ThingType
@@ -40,7 +35,6 @@ Resources:
     Type: AWS::IoT::Thing
     Properties:
       ThingName: RaspberryPiThing
-      ThingTypeName: RaspberryPiType
   RaspberryPiThingPrincipalAttachment:
     Type: AWS::IoT::ThingPrincipalAttachment
     Properties:
@@ -69,10 +63,10 @@ Resources:
                   - kinesisvideo:GetDataEndpoint
                 Resource: !Sub arn:aws:kinesisvideo:${AWS::Region}:${AWS::AccountId}:stream/${StreamName}/*
 
-  IoTRoleAlias:
+  RaspberryPiIoTRoleAlias:
     Type: AWS::IoT::RoleAlias
     Properties:
-      Alias: !Ref IoTRoleAlias
+      RoleAlias: RaspberryPiRoleAlias
       RoleArn: !GetAtt IoTRole.Arn
       CredentialDurationSeconds: 3600
 
@@ -86,7 +80,7 @@ Resources:
           - Effect: Allow
             Action:
               - iot:AssumeRoleWithCertificate
-            Resource: !Ref IoTRoleAlias
+            Resource: !Ref RaspberryPiIoTRoleAlias
   RaspberryPiPolicyPrincipalAttachment:
     Type: AWS::IoT::PolicyPrincipalAttachment
     Properties:

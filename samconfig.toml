@@ -13,9 +13,13 @@ parallel = true
 lint = true
 
 [default.deploy.parameters]
-capabilities = "CAPABILITY_IAM"
+capabilities = "CAPABILITY_NAMED_IAM"
 confirm_changeset = true
 resolve_s3 = true
+s3_prefix = "pi-streaming"
+region = "eu-west-1"
+parameter_overrides = "StreamName=\"RaspberryPiStream\" RaspberryPiCertificateArn=\"arn:aws:iot:eu-west-1:841162692423:cert/19d92835a2365310aaab2660e9237757f4eed7b355ed956bb00c17168d79a8ef\" IoTEndpoint=\"c2hvqkfjjgz92x.credentials.iot.eu-west-1.amazonaws.com\""
+image_repositories = []
 
 [default.package.parameters]
 resolve_s3 = true
